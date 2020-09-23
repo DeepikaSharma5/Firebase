@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,20 +15,25 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    EditText txtID,txtName,txtAdd,txtConNo;
+    EditText txtID,txtName,txtAdd,txtConNo,txtid;
     Button btnSave,btnShow,btnUpdate,btnDelete;
     DatabaseReference dbRef;
     Student std;
+
+    String searchID,idToBeRemoved,idToBeUpdate;
 
     private void clearControls(){
         txtID.setText("");
         txtName.setText("");
         txtAdd.setText("");
         txtConNo.setText("");
+        txtid.setText("");
     }
 
 
@@ -40,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         txtName = findViewById(R.id.EtName);
         txtAdd = findViewById(R.id.EtAddress);
         txtConNo = findViewById(R.id.EtConNo);
+        txtid = findViewById(R.id.search);
 
 
         btnSave = findViewById(R.id.BtnSave);
@@ -74,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                         std.setAddress(txtAdd.getText().toString().trim());
                         std.setConNo(txtConNo.getText().toString().trim());
 
-                        dbRef.child("std2").setValue(std);
+                        dbRef.push().setValue(std);
 
                         Toast.makeText(getApplicationContext(),"Data Saved Successfully",Toast.LENGTH_SHORT).show();
                         clearControls();
@@ -90,15 +97,20 @@ public class MainActivity extends AppCompatActivity {
         btnShow.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                DatabaseReference readRef = FirebaseDatabase.getInstance().getReference().child("Student").child("std2");
-                readRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                searchID = txtid.getText().toString().trim();
+                DatabaseReference readRef = FirebaseDatabase.getInstance().getReference();
+                DatabaseReference dref = readRef.child("Student");
+                Query query = dref.orderByChild("id").equalTo(searchID);
+                query.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        if(dataSnapshot.hasChildren()){
-                            txtID.setText((dataSnapshot.child("id").getValue().toString()));
-                            txtName.setText((dataSnapshot.child("name").getValue().toString()));
-                            txtAdd.setText((dataSnapshot.child("address").getValue().toString()));
-                            txtConNo.setText((dataSnapshot.child("conNo").getValue().toString()));
+                        if(dataSnapshot.exists()) {
+                            for (DataSnapshot ds : dataSnapshot.getChildren()) {
+                                txtID.setText((ds.child("id").getValue().toString()));
+                                txtName.setText((ds.child("name").getValue().toString()));
+                                txtAdd.setText((ds.child("address").getValue().toString()));
+                                txtConNo.setText((ds.child("conNo").getValue().toString()));
+                            }
                         }
                         else
                             Toast.makeText(getApplicationContext(),"No Source to Display",Toast.LENGTH_SHORT).show();
@@ -107,11 +119,63 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError databaseError) {
-
+                        Log.d("TAG", databaseError.getMessage()); //Don't ignore potential errors!
                     }
                 });
             }
         });
+
+        btnUpdate.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                idToBeUpdate = txtid.getText().toString().trim();
+                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                DatabaseReference studentRef = rootRef.child("Student");
+                Query query = studentRef.orderByChild("id").equalTo(idToBeUpdate);
+                query.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for(DataSnapshot ds : dataSnapshot.getChildren()) {
+                            //ds.getRef().updateChildren(std,s);
+                            clearControls();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.d("TAG", databaseError.getMessage()); //Don't ignore potential errors!
+                    }
+                });
+
+
+            }
+        });
+
+        btnDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                idToBeRemoved = txtid.getText().toString().trim();
+                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
+                DatabaseReference studentRef = rootRef.child("Student");
+                Query query = studentRef.orderByChild("id").equalTo(idToBeRemoved);
+                query.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                        for(DataSnapshot ds : dataSnapshot.getChildren()) {
+                            ds.getRef().removeValue();
+                            clearControls();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError databaseError) {
+                        Log.d("TAG", databaseError.getMessage()); //Don't ignore potential errors!
+                    }
+                });
+
+            }
+        });
+
     }
 
 }
