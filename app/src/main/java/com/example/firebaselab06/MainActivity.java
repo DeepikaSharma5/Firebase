@@ -7,8 +7,11 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
@@ -17,6 +20,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,6 +30,13 @@ public class MainActivity extends AppCompatActivity {
     Button btnSave,btnShow,btnUpdate,btnDelete;
     DatabaseReference dbRef;
     Student std;
+    ListView listview;
+
+    ArrayList<String> student = new ArrayList<>();
+    ArrayAdapter myAdapter1;
+
+    Integer indexVal;
+    String item;
 
     String searchID,idToBeRemoved,idToBeUpdate;
 
@@ -48,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
         txtConNo = findViewById(R.id.EtConNo);
         txtid = findViewById(R.id.search);
 
+        listview = (ListView)findViewById(R.id.listview);
+
 
         btnSave = findViewById(R.id.BtnSave);
         btnShow = findViewById(R.id.BtnShow);
@@ -55,6 +69,10 @@ public class MainActivity extends AppCompatActivity {
         btnDelete = findViewById(R.id.BtnDelete);
 
         std = new Student();
+
+        myAdapter1 = new ArrayAdapter(this,android.R.layout.simple_list_item_1,student);
+
+        listview.setAdapter(myAdapter1);
 
 
     }
@@ -81,7 +99,17 @@ public class MainActivity extends AppCompatActivity {
                         std.setAddress(txtAdd.getText().toString().trim());
                         std.setConNo(txtConNo.getText().toString().trim());
 
+                        String v1 = txtID.getText().toString();
+                        String v2 = txtName.getText().toString();
+                        String v3 = txtAdd.getText().toString();
+                        String v4 = txtConNo.getText().toString();
+
                         dbRef.push().setValue(std);
+                        student.add(v1);
+                        student.add(v2);
+                        student.add(v3);
+                        student.add(v4);
+                        myAdapter1.notifyDataSetChanged();
 
                         Toast.makeText(getApplicationContext(),"Data Saved Successfully",Toast.LENGTH_SHORT).show();
                         clearControls();
@@ -125,27 +153,28 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                item = adapterView.getItemAtPosition(i).toString() + "has been updated";
+                indexVal=i;
+                Toast.makeText(MainActivity.this,item,Toast.LENGTH_SHORT).show();
+            }
+        });
+
         btnUpdate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                idToBeUpdate = txtid.getText().toString().trim();
-                DatabaseReference rootRef = FirebaseDatabase.getInstance().getReference();
-                DatabaseReference studentRef = rootRef.child("Student");
-                Query query = studentRef.orderByChild("id").equalTo(idToBeUpdate);
-                query.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        for(DataSnapshot ds : dataSnapshot.getChildren()) {
-                            //ds.getRef().updateChildren(std,s);
-                            clearControls();
-                        }
-                    }
+                String v1 = txtID.getText().toString();
+                String v2 = txtName.getText().toString();
+                String v3 = txtAdd.getText().toString();
+                String v4 = txtConNo.getText().toString();
+                student.set(indexVal,v1);
+                student.set(indexVal,v2);
+                student.set(indexVal,v3);
+                student.set(indexVal,v4);
+                myAdapter1.notifyDataSetChanged();
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError databaseError) {
-                        Log.d("TAG", databaseError.getMessage()); //Don't ignore potential errors!
-                    }
-                });
 
 
             }
